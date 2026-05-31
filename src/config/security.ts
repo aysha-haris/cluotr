@@ -5,7 +5,9 @@ export const contentSecurityPolicy = {
     defaultSrc: ["'self'"],
     scriptSrc: [
       "'self'",
-      ...(isDev ? ["'unsafe-eval'", "'unsafe-inline'"] : []),
+      // Next.js injects inline scripts for RSC hydration — required in all environments
+      "'unsafe-inline'",
+      ...(isDev ? ["'unsafe-eval'"] : []),
       "https://www.googletagmanager.com",
       "https://www.google-analytics.com",
       "https://s.pinimg.com",
