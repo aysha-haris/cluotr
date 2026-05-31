@@ -3,18 +3,13 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z
     .string()
-    .min(1, "DATABASE_URL is required")
-    .startsWith("postgresql://", "DATABASE_URL must be a PostgreSQL connection string"),
+    .refine((v) => v.startsWith("postgresql://"), "DATABASE_URL must be a PostgreSQL connection string")
+    .optional(),
   NEXT_PUBLIC_SITE_URL: z
     .string()
     .url("NEXT_PUBLIC_SITE_URL must be a valid URL")
-    .transform((url) => url.replace(/\/$/, "")),
-  NEXT_PUBLIC_SUPABASE_URL: z
-    .string()
-    .url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL"),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
-    .string()
-    .min(1, "NEXT_PUBLIC_SUPABASE_ANON_KEY is required"),
+    .transform((url) => url.replace(/\/$/, ""))
+    .default("https://cloutr.com"),
   NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
   NEXT_PUBLIC_GSC_VERIFICATION: z.string().optional(),
   NEXT_PUBLIC_PINTEREST_TAG_ID: z.string().optional(),

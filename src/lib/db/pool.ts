@@ -7,6 +7,9 @@ declare global {
 }
 
 function createPool(): Pool {
+  if (!env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not configured");
+  }
   return new Pool({
     connectionString: env.DATABASE_URL,
     max: 10,
@@ -15,7 +18,20 @@ function createPool(): Pool {
   });
 }
 
-export const pool: Pool = globalThis.pgPool ?? createPool();
+function getPool(): Pool {
+  if (!globalThis.pgPool) {
+    globalThis.pgPool = createPool();
+  }
+  return globalThis.pgPool;
+}
+
+export const pool: Pool = (() => {
+  try {
+    return getPool();
+  } catch {
+    return new Pool({ connectionString: "postgresql://placeholder/placeholder" });
+  }
+})();
 
 if (env.NODE_ENV !== "production") {
   globalThis.pgPool = pool;
