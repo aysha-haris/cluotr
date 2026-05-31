@@ -7,7 +7,7 @@ const envSchema = z.object({
     .optional(),
   NEXT_PUBLIC_SITE_URL: z
     .string()
-    .url("NEXT_PUBLIC_SITE_URL must be a valid URL")
+    .url()
     .transform((url) => url.replace(/\/$/, ""))
     .default("https://cloutr.com"),
   NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
