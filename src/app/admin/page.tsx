@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 import { AdminPage } from "@/components/pages/admin-page";
 
 export const metadata: Metadata = {
