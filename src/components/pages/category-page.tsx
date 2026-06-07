@@ -23,7 +23,7 @@ export function CategoryPage({ slug }: CategoryPageProps) {
       .then((data: Product[]) => {
         const filtered =
           slug === "trending" ? data : data.filter((p) => p.category === slug);
-        setProducts(filtered.length > 0 ? filtered : data.slice(0, 8));
+        setProducts(filtered);
       })
       .catch(() => {});
   }, [slug]);
@@ -82,11 +82,18 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
-        {products.map((product, i) => (
-          <ProductCard key={product.id} product={product} index={i} />
-        ))}
-      </div>
+      {products.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <p className="mb-2 text-lg font-medium text-foreground">No products yet</p>
+          <p className="text-sm text-muted-foreground">Check back soon for new finds in this category.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
+          {products.map((product, i) => (
+            <ProductCard key={product.id} product={product} index={i} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-16 text-center">
         <Button

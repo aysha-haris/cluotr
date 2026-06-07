@@ -31,23 +31,6 @@ import { CATEGORIES } from "@/lib/data";
 import type { CategoryOverride } from "@/types/catalog";
 import type { DbProduct } from "@/lib/db/queries/product-overrides";
 
-const ADMIN_PASSWORD = "cloutr2024";
-const AUTH_KEY = "cloutr-admin-authed";
-
-function isAdminAuthed(): boolean {
-  try {
-    return localStorage.getItem(AUTH_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setAdminAuthed(v: boolean) {
-  try {
-    if (v) localStorage.setItem(AUTH_KEY, "1");
-    else localStorage.removeItem(AUTH_KEY);
-  } catch {}
-}
 
 function isValidUrl(url: string): boolean {
   if (!url) return true;
@@ -73,13 +56,27 @@ function isValidAmazonUrl(url: string): boolean {
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const attempt = () => {
-    if (password === ADMIN_PASSWORD) {
-      onLogin();
-    } else {
+  const attempt = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        onLogin();
+      } else {
+        setError(true);
+        setTimeout(() => setError(false), 1500);
+      }
+    } catch {
       setError(true);
       setTimeout(() => setError(false), 1500);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,15 +100,16 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && attempt()}
+            onKeyDown={(e) => e.key === "Enter" && void attempt()}
             className={`h-11 rounded-full border-primary/20 text-center transition-all focus-visible:ring-primary/30 ${error ? "animate-pulse border-red-400 bg-red-50" : ""}`}
           />
           {error && <p className="text-xs text-red-500">Incorrect password. Try again.</p>}
           <Button
-            onClick={attempt}
+            onClick={() => void attempt()}
+            disabled={loading}
             className="h-11 rounded-full bg-primary text-white hover:bg-primary/90"
           >
-            Sign In
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
           </Button>
         </div>
       </motion.div>
@@ -1111,22 +1109,21 @@ function CategoriesTab() {
 
 // ─── Main Admin ───────────────────────────────────────────────────────────────
 export function AdminPage() {
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setAuthed(isAdminAuthed());
+    fetch("/api/admin/check")
+      .then((r) => setAuthed(r.ok))
+      .catch(() => setAuthed(false));
   }, []);
 
-  const handleLogin = () => {
-    setAdminAuthed(true);
-    setAuthed(true);
-  };
+  const handleLogin = () => setAuthed(true);
 
   const handleLogout = () => {
-    setAdminAuthed(false);
-    setAuthed(false);
+    void fetch("/api/admin/logout", { method: "POST" }).then(() => setAuthed(false));
   };
 
+  if (authed === null) return null; // checking auth
   if (!authed) return <LoginScreen onLogin={handleLogin} />;
 
   return (
