@@ -373,8 +373,8 @@ function ProductsTab() {
               >
                 <div className="flex items-center gap-3 border-b border-border/50 bg-muted/20 p-4">
                   <div className="relative shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     {draft.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={draft.imageUrl}
                         alt={draft.title}

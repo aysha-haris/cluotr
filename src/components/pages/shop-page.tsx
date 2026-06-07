@@ -70,7 +70,7 @@ export function ShopPage() {
     else if (sortBy === "rating")
       list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return list;
-  }, [products, search, activeCategory, sortBy, priceRange, selectedPrice]);
+  }, [products, search, activeCategory, sortBy, selectedPrice]);
 
   const clearFilters = () => {
     setSearch("");
