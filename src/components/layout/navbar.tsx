@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { useBoard } from "@/lib/board-context";
 
 const NAV_LINKS = [
-  { href: "/shop", label: "Shop" },
+  { href: "/", label: "Shop" },
+  { href: "/finds", label: "Finds" },
   { href: "/category/trending", label: "Trending" },
   { href: "/category/fashion", label: "Fashion" },
   { href: "/category/beauty", label: "Beauty" },
@@ -19,7 +20,7 @@ const NAV_LINKS = [
   { href: "/blog", label: "Blog" },
 ];
 
-const MOBILE_NAV_LINKS = [{ href: "/", label: "Dashboard" }, ...NAV_LINKS];
+const MOBILE_NAV_LINKS = NAV_LINKS;
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -77,7 +78,7 @@ export function Navbar() {
               <Search className="h-5 w-5" />
             </Button>
 
-            <Link href="/shop" className="hidden md:inline-flex">
+            <Link href="/finds" className="hidden md:inline-flex">
               <Button
                 variant="ghost"
                 size="icon"

@@ -9,9 +9,20 @@ import { CollectionCard } from "@/components/cards/collection-card";
 import { ProductCard } from "@/components/cards/product-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ARTICLES, CATEGORIES, COLLECTIONS, PRODUCTS } from "@/lib/data";
+import { ARTICLES, CATEGORIES, COLLECTIONS } from "@/lib/data";
+import type { Product } from "@/lib/data";
+import { useEffect, useState } from "react";
 
 export function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => setProducts(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex w-full flex-col">
       <section className="bg-hero-gradient relative overflow-hidden pb-32 pt-24">
@@ -114,7 +125,7 @@ export function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-6">
-            {PRODUCTS.map((product, i) => (
+            {products.map((product, i) => (
               <ProductCard key={product.id} product={product} index={i} />
             ))}
           </div>

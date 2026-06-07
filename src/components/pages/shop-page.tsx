@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/cards/product-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CATEGORIES, PRODUCTS } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
+import type { Product } from "@/lib/data";
+import type { CategoryOverride } from "@/types/catalog";
 
 const SORT_OPTIONS = [
   { label: "Trending", value: "trending" },
@@ -18,24 +20,43 @@ const SORT_OPTIONS = [
 
 const PRICE_RANGES = [
   { label: "All Prices", min: 0, max: Infinity },
-  { label: "Under $20", min: 0, max: 20 },
-  { label: "$20 – $50", min: 20, max: 50 },
-  { label: "$50 – $100", min: 50, max: 100 },
-  { label: "Over $100", min: 100, max: Infinity },
+  { label: "Under ₹20", min: 0, max: 20 },
+  { label: "₹20 – ₹50", min: 20, max: 50 },
+  { label: "₹50 – ₹100", min: 50, max: 100 },
+  { label: "Over ₹100", min: 100, max: Infinity },
 ];
 
 export function ShopPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [dbCategories, setDbCategories] = useState<CategoryOverride[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("trending");
   const [priceRange, setPriceRange] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  const allCategories = [{ id: "all", name: "All" }, ...CATEGORIES];
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => setProducts(data))
+      .catch(() => {});
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: CategoryOverride[]) => setDbCategories(data))
+      .catch(() => {});
+  }, []);
+
+  const staticIds = new Set<string>(CATEGORIES.map((c) => c.id));
+  const extraCategories = dbCategories.filter((d) => !staticIds.has(d.id));
+  const allCategories = [
+    { id: "all", name: "All" },
+    ...CATEGORIES,
+    ...extraCategories.map((d) => ({ id: d.id, name: d.name })),
+  ];
   const selectedPrice = PRICE_RANGES[priceRange];
 
   const filtered = useMemo(() => {
-    let list = [...PRODUCTS];
+    let list = [...products];
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((p) => p.title.toLowerCase().includes(q));
@@ -43,12 +64,13 @@ export function ShopPage() {
     if (activeCategory !== "all") {
       list = list.filter((p) => p.category === activeCategory);
     }
-    list = list.filter((p) => p.price >= selectedPrice.min && p.price < selectedPrice.max);
+    list = list.filter((p) => p.price >= selectedPrice!.min && p.price < selectedPrice!.max);
     if (sortBy === "price-asc") list.sort((a, b) => a.price - b.price);
     else if (sortBy === "price-desc") list.sort((a, b) => b.price - a.price);
-    else if (sortBy === "rating") list.sort((a, b) => b.rating - a.rating);
+    else if (sortBy === "rating")
+      list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return list;
-  }, [search, activeCategory, sortBy, priceRange, selectedPrice.min, selectedPrice.max]);
+  }, [products, search, activeCategory, sortBy, priceRange, selectedPrice]);
 
   const clearFilters = () => {
     setSearch("");

@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
-
-import { ShopPage } from "@/components/pages/shop-page";
-
-export const metadata: Metadata = {
-  title: "Shop | CLOUTR",
-  description: "Browse our full collection of curated picks across fashion, beauty, home, and more.",
-};
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ShopPage />;
+  redirect("/finds");
 }

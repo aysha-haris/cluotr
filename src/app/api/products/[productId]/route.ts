@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { deleteProductOverride, upsertProductOverride } from "@/lib/db/queries/product-overrides";
+import { deleteProduct, updateProduct } from "@/lib/db/queries/product-overrides";
 
-const schema = z.object({
-  title: z.string().nullable().optional(),
-  category: z.string().nullable().optional(),
-  imageUrl: z.string().url().nullable().optional(),
+const updateSchema = z.object({
+  title: z.string().min(1),
+  category: z.string().min(1),
+  imageUrl: z.string().refine((v) => { try { new URL(v); return true; } catch { return false; } }).nullable().optional(),
+  price: z.number().positive(),
+  affiliateUrl: z.string().refine((v) => { try { new URL(v); return true; } catch { return false; } }).nullable().optional(),
+  rating: z.number().min(0).max(5).nullable().optional(),
 });
 
 interface Params {
@@ -19,14 +22,18 @@ export async function PUT(req: Request, { params }: Params) {
   if (isNaN(id)) return NextResponse.json({ error: "Invalid productId" }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
-  const parsed = schema.safeParse(body);
+  const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
 
-  const result = await upsertProductOverride(id, {
-    title: parsed.data.title ?? null,
-    category: parsed.data.category ?? null,
+  const result = await updateProduct(id, {
+    title: parsed.data.title,
+    category: parsed.data.category,
     imageUrl: parsed.data.imageUrl ?? null,
+    price: parsed.data.price,
+    affiliateUrl: parsed.data.affiliateUrl ?? null,
+    rating: parsed.data.rating ?? null,
   });
+  if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(result);
 }
 
@@ -35,7 +42,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   const id = parseInt(productId, 10);
   if (isNaN(id)) return NextResponse.json({ error: "Invalid productId" }, { status: 400 });
 
-  const deleted = await deleteProductOverride(id);
+  const deleted = await deleteProduct(id);
   if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return new NextResponse(null, { status: 204 });
 }

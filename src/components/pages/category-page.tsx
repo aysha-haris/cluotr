@@ -3,30 +3,39 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/cards/product-card";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, PRODUCTS } from "@/lib/data";
+import { CATEGORIES } from "@/lib/data";
+import type { Product } from "@/lib/data";
 
 interface CategoryPageProps {
   slug: string;
 }
 
 export function CategoryPage({ slug }: CategoryPageProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Product[]) => {
+        const filtered =
+          slug === "trending" ? data : data.filter((p) => p.category === slug);
+        setProducts(filtered.length > 0 ? filtered : data.slice(0, 8));
+      })
+      .catch(() => {});
+  }, [slug]);
+
   const categoryInfo = CATEGORIES.find((c) => c.id === slug) ?? {
     name: slug.charAt(0).toUpperCase() + slug.slice(1),
     description: "Explore our curated finds.",
     image: "/images/cat-fashion.png",
   };
 
-  const categoryProducts =
-    slug === "trending" ? PRODUCTS : PRODUCTS.filter((p) => p.category === slug);
-
-  const displayProducts = categoryProducts.length > 0 ? categoryProducts : PRODUCTS.slice(0, 8);
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
-      {/* Category header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -52,10 +61,9 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         </div>
       </motion.div>
 
-      {/* Filter row */}
       <div className="mb-8 flex flex-col items-center justify-between gap-4 border-b border-border pb-4 sm:flex-row">
         <p className="text-sm font-medium text-muted-foreground">
-          Showing {displayProducts.length} items
+          Showing {products.length} items
         </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="rounded-full">
@@ -74,14 +82,12 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         </div>
       </div>
 
-      {/* Product grid */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
-        {displayProducts.map((product, i) => (
+        {products.map((product, i) => (
           <ProductCard key={product.id} product={product} index={i} />
         ))}
       </div>
 
-      {/* Load more */}
       <div className="mt-16 text-center">
         <Button
           asChild
