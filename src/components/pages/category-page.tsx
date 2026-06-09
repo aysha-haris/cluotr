@@ -14,8 +14,16 @@ interface CategoryPageProps {
   slug: string;
 }
 
+interface DbCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+}
+
 export function CategoryPage({ slug }: CategoryPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [dbCategory, setDbCategory] = useState<DbCategory | null>(null);
 
   useEffect(() => {
     fetch("/api/products")
@@ -26,12 +34,21 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         setProducts(filtered);
       })
       .catch(() => {});
+
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: DbCategory[]) => {
+        const match = data.find((c) => c.id === slug);
+        if (match) setDbCategory(match);
+      })
+      .catch(() => {});
   }, [slug]);
 
-  const categoryInfo = CATEGORIES.find((c) => c.id === slug) ?? {
-    name: slug.charAt(0).toUpperCase() + slug.slice(1),
-    description: "Explore our curated finds.",
-    image: "/images/cat-fashion.png",
+  const staticInfo = CATEGORIES.find((c) => c.id === slug);
+  const categoryInfo = {
+    name: dbCategory?.name ?? staticInfo?.name ?? (slug.charAt(0).toUpperCase() + slug.slice(1)),
+    description: dbCategory?.description ?? staticInfo?.description ?? "Explore our curated finds.",
+    image: dbCategory?.imageUrl ?? staticInfo?.image ?? "/images/cat-fashion.png",
   };
 
   return (

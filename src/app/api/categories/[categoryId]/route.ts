@@ -3,10 +3,12 @@ import { z } from "zod";
 
 import { deleteCategoryOverride, upsertCategoryOverride } from "@/lib/db/queries/category-overrides";
 
+const isValidUrl = (v: string) => { try { new URL(v); return true; } catch { return false; } };
+
 const schema = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: z.string().refine((v) => !v || isValidUrl(v), "Invalid URL").nullable().optional(),
   sortOrder: z.number().int().default(0),
 });
 
