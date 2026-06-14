@@ -10,20 +10,21 @@ import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/data";
 import type { Product } from "@/lib/data";
 
-interface CategoryPageProps {
-  slug: string;
-}
-
-interface DbCategory {
+export interface DbCategory {
   id: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
+  bannerUrl: string | null;
 }
 
-export function CategoryPage({ slug }: CategoryPageProps) {
+interface CategoryPageProps {
+  slug: string;
+  initialCategory?: DbCategory | null;
+}
+
+export function CategoryPage({ slug, initialCategory }: CategoryPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [dbCategory, setDbCategory] = useState<DbCategory | null>(null);
 
   useEffect(() => {
     fetch("/api/products")
@@ -34,21 +35,13 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         setProducts(filtered);
       })
       .catch(() => {});
-
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data: DbCategory[]) => {
-        const match = data.find((c) => c.id === slug);
-        if (match) setDbCategory(match);
-      })
-      .catch(() => {});
   }, [slug]);
 
   const staticInfo = CATEGORIES.find((c) => c.id === slug);
   const categoryInfo = {
-    name: dbCategory?.name ?? staticInfo?.name ?? (slug.charAt(0).toUpperCase() + slug.slice(1)),
-    description: dbCategory?.description ?? staticInfo?.description ?? "Explore our curated finds.",
-    image: dbCategory?.imageUrl ?? staticInfo?.image ?? "/images/cat-fashion.png",
+    name: initialCategory?.name ?? staticInfo?.name ?? (slug.charAt(0).toUpperCase() + slug.slice(1)),
+    description: initialCategory?.description ?? staticInfo?.description ?? "Explore our curated finds.",
+    image: initialCategory?.bannerUrl ?? null,
   };
 
   return (
@@ -59,14 +52,18 @@ export function CategoryPage({ slug }: CategoryPageProps) {
         transition={{ duration: 0.5 }}
         className="relative mb-12 flex h-[30vh] items-center justify-center overflow-hidden rounded-[32px] bg-muted text-center md:h-[40vh]"
       >
-        <Image
-          src={categoryInfo.image}
-          alt={categoryInfo.name}
-          fill
-          sizes="100vw"
-          className="object-cover opacity-80"
-          priority
-        />
+        {categoryInfo.image ? (
+          <Image
+            src={categoryInfo.image}
+            alt={categoryInfo.name}
+            fill
+            sizes="100vw"
+            className="object-cover opacity-80"
+            priority
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
+        )}
         <div className="absolute inset-0 bg-black/30" />
         <div className="relative z-10 p-6">
           <h1 className="mb-4 font-serif text-4xl font-bold text-white drop-shadow-md md:text-6xl">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -11,17 +12,114 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ARTICLES, CATEGORIES, COLLECTIONS } from "@/lib/data";
 import type { Product } from "@/lib/data";
+import type { CategoryOverride } from "@/types/catalog";
 import { useEffect, useState } from "react";
+
+const PAGE_SIZE = 8;
+
+interface CatItem {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+}
+
+function CategorySection({ categories }: { categories: CatItem[] }) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(categories.length / PAGE_SIZE);
+  const paged = categories.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const showArrows = categories.length > PAGE_SIZE;
+
+  return (
+    <section className="bg-background py-10 md:py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="mb-12 text-center font-serif text-3xl font-bold md:text-4xl">
+          Shop by Category
+        </h2>
+        {/* Mobile horizontal scroll */}
+        <div className="scrollbar-hide -mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:hidden">
+          {categories.map((cat, i) => (
+            <div key={cat.id} className="h-[260px] w-[72vw] shrink-0 snap-center">
+              <CategoryCard category={cat} index={i} className="h-full" />
+            </div>
+          ))}
+        </div>
+        {/* Desktop paginated grid */}
+        <div className="hidden md:block">
+          <div className="mx-auto max-w-6xl auto-rows-[240px] gap-4 md:grid md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+            {paged.map((cat, i) => {
+              let className = "";
+              if (i === 0) className = "md:col-span-2 md:row-span-2";
+              else if (i === 1 || i === 2) className = "md:col-span-1 md:row-span-1";
+              else if (i === 3) className = "md:col-span-2 md:row-span-1 lg:col-span-2 lg:row-span-1";
+              else className = "md:col-span-1 md:row-span-1";
+              return (
+                <CategoryCard key={cat.id} category={cat} index={i} className={`h-full ${className}`} />
+              );
+            })}
+          </div>
+          {showArrows && (
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm transition hover:bg-muted disabled:opacity-30"
+                aria-label="Previous categories"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <span className="text-sm text-muted-foreground">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page === totalPages - 1}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm transition hover:bg-muted disabled:opacity-30"
+                aria-label="Next categories"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [dbCategories, setDbCategories] = useState<CategoryOverride[]>([]);
 
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data: Product[]) => setProducts(data))
       .catch(() => {});
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: CategoryOverride[]) => setDbCategories(data))
+      .catch(() => {});
   }, []);
+
+  const dbCategoryMap = new Map(dbCategories.map((d) => [d.id, d]));
+  const staticIds = new Set(CATEGORIES.map((c) => c.id));
+  const categoriesWithImages = [
+    ...CATEGORIES.map((c) => ({
+      id: c.id,
+      name: dbCategoryMap.get(c.id)?.name ?? c.name,
+      description: dbCategoryMap.get(c.id)?.description ?? c.description,
+      imageUrl: dbCategoryMap.get(c.id)?.imageUrl ?? null,
+    })),
+    ...dbCategories
+      .filter((d) => !staticIds.has(d.id))
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        description: d.description ?? "",
+        imageUrl: d.imageUrl ?? null,
+      })),
+  ];
 
   return (
     <div className="flex w-full flex-col">
@@ -82,33 +180,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="bg-background py-10 md:py-20">
-        <div className="container mx-auto px-4">
-          <h2 className="mb-12 text-center font-serif text-3xl font-bold md:text-4xl">
-            Shop by Category
-          </h2>
-          <div className="scrollbar-hide -mx-4 flex gap-4 overflow-x-auto px-4 pb-4 md:hidden">
-            {CATEGORIES.map((cat, i) => (
-              <div key={cat.id} className="h-[260px] w-[72vw] shrink-0 snap-center">
-                <CategoryCard category={cat} index={i} className="h-full" />
-              </div>
-            ))}
-          </div>
-          <div className="mx-auto hidden max-w-6xl auto-rows-[240px] gap-4 md:grid md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-            {CATEGORIES.map((cat, i) => {
-              let className = "";
-              if (i === 0) className = "md:col-span-2 md:row-span-2";
-              else if (i === 1 || i === 2) className = "md:col-span-1 md:row-span-1";
-              else if (i === 3)
-                className = "md:col-span-2 md:row-span-1 lg:col-span-2 lg:row-span-1";
-              else className = "md:col-span-1 md:row-span-1";
-              return (
-                <CategoryCard key={cat.id} category={cat} index={i} className={`h-full ${className}`} />
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      <CategorySection categories={categoriesWithImages} />
 
       <section className="bg-muted/30 py-10 md:py-20">
         <div className="container mx-auto px-4">

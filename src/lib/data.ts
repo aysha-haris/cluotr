@@ -1,40 +1,10 @@
 export const CATEGORIES = [
-  {
-    id: "fashion",
-    name: "Fashion",
-    image: "/images/cat-fashion.png",
-    description: "Curated style picks",
-  },
-  {
-    id: "accessories",
-    name: "Accessories",
-    image: "/images/cat-accessories.png",
-    description: "Complete the look",
-  },
-  {
-    id: "beauty",
-    name: "Beauty",
-    image: "/images/cat-beauty.png",
-    description: "Skincare & makeup",
-  },
-  {
-    id: "home",
-    name: "Home",
-    image: "/images/cat-home.png",
-    description: "Aesthetic spaces",
-  },
-  {
-    id: "gifts",
-    name: "Gifts",
-    image: "/images/cat-gifts.png",
-    description: "For someone special",
-  },
-  {
-    id: "trending",
-    name: "Trending Finds",
-    image: "/images/cat-trending.png",
-    description: "Going viral now",
-  },
+  { id: "fashion",     name: "Fashion",        description: "Curated style picks"   },
+  { id: "accessories", name: "Accessories",    description: "Complete the look"      },
+  { id: "beauty",      name: "Beauty",         description: "Skincare & makeup"      },
+  { id: "home",        name: "Home",           description: "Aesthetic spaces"       },
+  { id: "gifts",       name: "Gifts",          description: "For someone special"    },
+  { id: "trending",    name: "Trending Finds", description: "Going viral now"        },
 ] as const;
 
 export const COLLECTIONS = [

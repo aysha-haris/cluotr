@@ -24,3 +24,4 @@ export async function uploadImage(bucket: string, file: File): Promise<string> {
 
 export const uploadProductImage = (file: File) => uploadImage("product-images", file);
 export const uploadCategoryImage = (file: File) => uploadImage("category-images", file);
+export const uploadCategoryBanner = (file: File) => uploadImage("category-banners", file);

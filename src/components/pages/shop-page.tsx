@@ -46,12 +46,16 @@ export function ShopPage() {
       .catch(() => {});
   }, []);
 
+  const dbCategoryMap = new Map(dbCategories.map((d) => [d.id, d]));
   const staticIds = new Set<string>(CATEGORIES.map((c) => c.id));
   const extraCategories = dbCategories.filter((d) => !staticIds.has(d.id));
   const allCategories = [
-    { id: "all", name: "All" },
-    ...CATEGORIES,
-    ...extraCategories.map((d) => ({ id: d.id, name: d.name })),
+    { id: "all", name: "All", image: "" },
+    ...CATEGORIES.map((c) => ({
+      id: c.id,
+      name: dbCategoryMap.get(c.id)?.name ?? c.name,
+    })),
+    ...extraCategories.map((d) => ({ id: d.id, name: d.name, image: d.imageUrl ?? "" })),
   ];
   const selectedPrice = PRICE_RANGES[priceRange];
 

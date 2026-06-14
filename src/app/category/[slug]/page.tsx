@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 import { CategoryPage } from "@/components/pages/category-page";
+import { getCategoryOverrides } from "@/lib/db/queries/category-overrides";
 import { CATEGORIES } from "@/lib/data";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -19,5 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  return <CategoryPage slug={slug} />;
+  const allDbCategories = await getCategoryOverrides();
+  const dbCategory = allDbCategories.find((c) => c.id === slug) ?? null;
+  return <CategoryPage slug={slug} initialCategory={dbCategory} />;
 }

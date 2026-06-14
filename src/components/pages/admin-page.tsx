@@ -24,7 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { uploadCategoryImage, uploadProductImage } from "@/lib/supabase";
+import { uploadCategoryBanner, uploadCategoryImage, uploadProductImage } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { CATEGORIES } from "@/lib/data";
@@ -478,8 +478,8 @@ function ProductFormFields({
     try {
       const url = await uploadProductImage(file);
       onField("imageUrl", url);
-    } catch {
-      alert("Upload failed. Try again.");
+    } catch (err) {
+      alert("Upload failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -630,10 +630,12 @@ function ProductFormFieldsInner({
 
 // ─── Reusable image upload field ─────────────────────────────────────────────
 function CategoryImageField({
+  bucket,
   value,
   placeholder,
   onChange,
 }: {
+  bucket: "category-images" | "category-banners";
   value: string;
   placeholder?: string;
   onChange: (url: string) => void;
@@ -646,10 +648,11 @@ function CategoryImageField({
     if (!file) return;
     setUploading(true);
     try {
-      const url = await uploadCategoryImage(file);
+      const uploadFn = bucket === "category-banners" ? uploadCategoryBanner : uploadCategoryImage;
+      const url = await uploadFn(file);
       onChange(url);
-    } catch {
-      alert("Upload failed. Try again.");
+    } catch (err) {
+      alert("Upload failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -697,6 +700,7 @@ interface CategoryDraft {
   name: string;
   description: string;
   imageUrl: string;
+  bannerUrl: string;
   sortOrder: string;
 }
 
@@ -713,6 +717,7 @@ function CategoriesTab() {
     name: "",
     description: "",
     imageUrl: "",
+    bannerUrl: "",
     sortOrder: "",
   });
   const newNameRef = useRef<HTMLInputElement>(null);
@@ -741,7 +746,7 @@ function CategoriesTab() {
         id: c.id,
         defaultName: c.name,
         defaultDesc: c.description,
-        defaultImage: c.image,
+        defaultImage: "",
         db,
         isDefault: true,
       };
@@ -767,6 +772,7 @@ function CategoriesTab() {
           name: db?.name ?? defaultName,
           description: db?.description ?? defaultDesc,
           imageUrl: db?.imageUrl ?? defaultImage,
+          bannerUrl: db?.bannerUrl ?? "",
           sortOrder: db?.sortOrder != null ? String(db.sortOrder) : "0",
         };
       });
@@ -775,12 +781,13 @@ function CategoriesTab() {
   }, [dbCategories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getDraft = (id: string): CategoryDraft =>
-    drafts[id] ?? { name: "", description: "", imageUrl: "", sortOrder: "0" };
+    drafts[id] ?? { name: "", description: "", imageUrl: "", bannerUrl: "", sortOrder: "0" };
 
   const getSaved = (item: (typeof mergedList)[0]): CategoryDraft => ({
     name: item.db?.name ?? item.defaultName,
     description: item.db?.description ?? item.defaultDesc,
     imageUrl: item.db?.imageUrl ?? item.defaultImage,
+    bannerUrl: item.db?.bannerUrl ?? "",
     sortOrder: item.db?.sortOrder != null ? String(item.db.sortOrder) : "0",
   });
 
@@ -807,9 +814,12 @@ function CategoriesTab() {
           name: draft.name.trim(),
           description: draft.description.trim() || null,
           imageUrl: draft.imageUrl.trim() || null,
+          bannerUrl: draft.bannerUrl.trim() || null,
           sortOrder: parseInt(draft.sortOrder) || 0,
         }),
       });
+      // Clear draft so it reinitialises from fresh DB data
+      setDrafts((prev) => { const n = { ...prev }; delete n[categoryId]; return n; });
       await fetchData();
       setSaved((prev) => ({ ...prev, [categoryId]: true }));
       setTimeout(() => setSaved((prev) => ({ ...prev, [categoryId]: false })), 2000);
@@ -839,13 +849,14 @@ function CategoriesTab() {
           name: newDraft.name.trim(),
           description: newDraft.description.trim() || null,
           imageUrl: newDraft.imageUrl.trim() || null,
+          bannerUrl: newDraft.bannerUrl.trim() || null,
           sortOrder: parseInt(newDraft.sortOrder) || 0,
         }),
       });
       await fetchData();
       setAddingNew(false);
       setNewId("");
-      setNewDraft({ name: "", description: "", imageUrl: "", sortOrder: "" });
+      setNewDraft({ name: "", description: "", imageUrl: "", bannerUrl: "", sortOrder: "" });
       toast({ description: "Category added!" });
     } catch {
       toast({ description: "Failed to add category.", variant: "destructive" });
@@ -936,11 +947,21 @@ function CategoriesTab() {
               />
             </div>
             <div className="flex flex-col gap-1 sm:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Image URL</label>
+              <label className="text-xs font-medium text-muted-foreground">Card Image <span className="text-muted-foreground/60">(home page)</span></label>
               <CategoryImageField
+                bucket="category-images"
                 value={newDraft.imageUrl}
-                placeholder="https://... (category header image)"
+                placeholder="https://... (square/portrait image)"
                 onChange={(url) => setNewDraft((p) => ({ ...p, imageUrl: url }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Banner Image <span className="text-muted-foreground/60">(hero on /category page)</span></label>
+              <CategoryImageField
+                bucket="category-banners"
+                value={newDraft.bannerUrl}
+                placeholder="https://... (wide landscape image)"
+                onChange={(url) => setNewDraft((p) => ({ ...p, bannerUrl: url }))}
               />
             </div>
           </div>
@@ -1049,11 +1070,21 @@ function CategoriesTab() {
                     />
                   </div>
                   <div className="flex flex-col gap-1 sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground">Image URL</label>
+                    <label className="text-xs font-medium text-muted-foreground">Card Image <span className="text-muted-foreground/60">(shown on home page)</span></label>
                     <CategoryImageField
+                      bucket="category-images"
                       value={draft.imageUrl}
-                      placeholder={item.defaultImage || "https://... (category banner image)"}
+                      placeholder="https://... (square/portrait image)"
                       onChange={(url) => setField(item.id, "imageUrl", url)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 sm:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Banner Image <span className="text-muted-foreground/60">(hero on /category page)</span></label>
+                    <CategoryImageField
+                      bucket="category-banners"
+                      value={draft.bannerUrl}
+                      placeholder="https://... (wide landscape image)"
+                      onChange={(url) => setField(item.id, "bannerUrl", url)}
                     />
                   </div>
                 </div>

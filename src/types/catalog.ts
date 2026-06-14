@@ -16,5 +16,6 @@ export interface CategoryOverride {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  bannerUrl: string | null;
   sortOrder: number;
 }

@@ -6,6 +6,7 @@ interface CategoryOverrideRow {
   name: string;
   description: string | null;
   image_url: string | null;
+  banner_url: string | null;
   sort_order: number;
 }
 
@@ -15,6 +16,7 @@ function toCategoryOverride(row: CategoryOverrideRow): CategoryOverride {
     name: row.name,
     description: row.description,
     imageUrl: row.image_url,
+    bannerUrl: row.banner_url,
     sortOrder: row.sort_order,
   };
 }
@@ -22,7 +24,7 @@ function toCategoryOverride(row: CategoryOverrideRow): CategoryOverride {
 export async function getCategoryOverrides(): Promise<CategoryOverride[]> {
   try {
     const result = await query<CategoryOverrideRow>(
-      `SELECT id, name, description, image_url, sort_order
+      `SELECT id, name, description, image_url, banner_url, sort_order
        FROM categories ORDER BY sort_order ASC, name ASC`,
     );
     return result.rows.map(toCategoryOverride);
@@ -33,19 +35,20 @@ export async function getCategoryOverrides(): Promise<CategoryOverride[]> {
 
 export async function upsertCategoryOverride(
   id: string,
-  data: { name: string; description: string | null; imageUrl: string | null; sortOrder: number },
+  data: { name: string; description: string | null; imageUrl: string | null; bannerUrl: string | null; sortOrder: number },
 ): Promise<CategoryOverride> {
   const result = await query<CategoryOverrideRow>(
-    `INSERT INTO categories (id, name, description, image_url, sort_order, updated_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())
+    `INSERT INTO categories (id, name, description, image_url, banner_url, sort_order, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NOW())
      ON CONFLICT (id) DO UPDATE
        SET name = EXCLUDED.name,
            description = EXCLUDED.description,
            image_url = EXCLUDED.image_url,
+           banner_url = EXCLUDED.banner_url,
            sort_order = EXCLUDED.sort_order,
            updated_at = NOW()
-     RETURNING id, name, description, image_url, sort_order`,
-    [id, data.name, data.description, data.imageUrl, data.sortOrder],
+     RETURNING id, name, description, image_url, banner_url, sort_order`,
+    [id, data.name, data.description, data.imageUrl, data.bannerUrl, data.sortOrder],
   );
   return toCategoryOverride(result.rows[0]!);
 }
