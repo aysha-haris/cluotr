@@ -103,7 +103,7 @@ export function HomePage() {
   }, []);
 
   const dbCategoryMap = new Map(dbCategories.map((d) => [d.id, d]));
-  const staticIds = new Set(CATEGORIES.map((c) => c.id));
+  const staticIds = new Set<string>(CATEGORIES.map((c) => c.id));
   const categoriesWithImages = [
     ...CATEGORIES.map((c) => ({
       id: c.id,
